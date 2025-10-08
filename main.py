@@ -13,7 +13,6 @@ st.write("---")
 # Use a single selector instead of two independent checkboxes to avoid both being active
 mode = st.radio("Choose calculator:", ("Curve Fitting Data Calculator", "Co-Efficient Co-relation Data Calculator"))
 
-
 # Helper: parse a comma-separated string into a numpy array of floats with validation
 def parse_numbers(text: str) -> np.ndarray:
     if text is None:
@@ -25,6 +24,9 @@ def parse_numbers(text: str) -> np.ndarray:
         return np.array([float(p) for p in parts])
     except ValueError as ve:
         raise ValueError("Could not parse all values as numbers. Make sure input is comma-separated numbers.") from ve
+
+def round_arr(arr, decimals=4):
+    return np.round(arr, decimals)
 
 if mode == "Curve Fitting Data Calculator":
     st.markdown("""
@@ -51,45 +53,42 @@ if mode == "Curve Fitting Data Calculator":
             elif len(x) != len(y):
                 st.error("❌ Number of X and Y values must be the same.")
             else:
-                # Calculations
+                # Calculations (all columns rounded to 4 decimals)
                 df = pd.DataFrame({
-                    "X": x,
-                    "Y": y,
-                    "X²": x ** 2,
-                    "X³": x ** 3,
-                    "X⁴": x ** 4,
-                    "X*Y": x * y,
-                    "X²*Y": (x ** 2) * y
+                    "X": round_arr(x),
+                    "Y": round_arr(y),
+                    "X²": round_arr(x ** 2),
+                    "X³": round_arr(x ** 3),
+                    "X⁴": round_arr(x ** 4),
+                    "X*Y": round_arr(x * y),
+                    "X²*Y": round_arr((x ** 2) * y)
                 })
 
                 st.subheader("Calculated Table")
-                # Display numbers rounded to 4 decimal places
-                st.dataframe(df.round(4), use_container_width=True)
+                st.dataframe(df, use_container_width=True)
 
-                # Summations (rounded to 4 decimal places)
+                # Summations (rounded to 4 decimals)
                 sums = {
-                    "ΣX": np.sum(x),
-                    "ΣY": np.sum(y),
-                    "ΣX²": np.sum(x ** 2),
-                    "ΣX³": np.sum(x ** 3),
-                    "ΣX⁴": np.sum(x ** 4),
-                    "Σ(X*Y)": np.sum(x * y),
-                    "Σ(X²*Y)": np.sum((x ** 2) * y),
+                    "ΣX": round(float(np.sum(x)), 4),
+                    "ΣY": round(float(np.sum(y)), 4),
+                    "ΣX²": round(float(np.sum(x ** 2)), 4),
+                    "ΣX³": round(float(np.sum(x ** 3)), 4),
+                    "ΣX⁴": round(float(np.sum(x ** 4)), 4),
+                    "Σ(X*Y)": round(float(np.sum(x * y)), 4),
+                    "Σ(X²*Y)": round(float(np.sum((x ** 2) * y)), 4),
                 }
-                sums_rounded = {k: round(float(v), 4) for k, v in sums.items()}
                 st.subheader("Summations")
-                st.write(pd.DataFrame([sums_rounded]))
+                st.write(pd.DataFrame([sums]))
 
                 # Graphical Representation
                 st.subheader("Graphical Representation")
-                st.line_chart(df[["X", "Y"]])  # Plot only X vs Y for clarity
-                # Optional: Let user select columns to plot with st.multiselect
+                # Plot only X vs Y for clarity
+                st.line_chart(df[["X", "Y"]])  
 
                 st.info("✅ Table and graph generated successfully!")
 
         except Exception as e:
             st.error(f"⚠️ Error: {e}")
-
 
 if mode == "Co-Efficient Co-relation Data Calculator":
     st.markdown("""
@@ -113,56 +112,58 @@ if mode == "Co-Efficient Co-relation Data Calculator":
             elif len(x) != len(y):
                 st.error("The number of X and Y values must be the same.")
             else:
-                # Build table only when inputs are valid
+                # Means
+                x_bar = round(float(np.mean(x)), 4)
+                y_bar = round(float(np.mean(y)), 4)
+                X = round_arr(x - x_bar)
+                Y = round_arr(y - y_bar)
+                X2 = round_arr(X ** 2)
+                Y2 = round_arr(Y ** 2)
+                XY = round_arr(X * Y)
+
                 df = pd.DataFrame({
-                    "x": x,
-                    "y": y,
-                    "X=x-x̄": x - np.mean(x),
-                    "Y=y-ȳ": y - np.mean(y),
-                    "X²": (x - np.mean(x)) ** 2,
-                    "Y²": (y - np.mean(y)) ** 2,
-                    "XY": (x - np.mean(x)) * (y - np.mean(y)),
+                    "x": round_arr(x),
+                    "y": round_arr(y),
+                    "X=x-x̄": X,
+                    "Y=y-ȳ": Y,
+                    "X²": X2,
+                    "Y²": Y2,
+                    "XY": XY,
                 })
                 st.subheader("Generated Data Table")
-                # Display numbers rounded to 4 decimal places
-                st.dataframe(df.round(4), use_container_width=True)
+                st.dataframe(df, use_container_width=True)
 
                 sums = {
-                    "Σx": np.sum(x),
-                    "Σy": np.sum(y),
-                    "ΣX": np.sum(x - np.mean(x)),
-                    "ΣY": np.sum(y - np.mean(y)),
-                    "ΣX²": np.sum((x - np.mean(x)) ** 2),
-                    "ΣY²": np.sum((y - np.mean(y)) ** 2),
-                    "ΣXY": np.sum((x - np.mean(x)) * (y - np.mean(y)))
+                    "Σx": round(float(np.sum(x)), 4),
+                    "Σy": round(float(np.sum(y)), 4),
+                    "ΣX²": round(float(np.sum(X2)), 4),
+                    "ΣY²": round(float(np.sum(Y2)), 4),
+                    "ΣXY": round(float(np.sum(XY)), 4)
                 }
-                sums_rounded = {k: round(float(v), 4) for k, v in sums.items()}
                 st.subheader("Summation Values")
-                st.write(pd.DataFrame([sums_rounded]))
+                st.write(pd.DataFrame([sums]))
 
                 # Avoid division by zero in degenerate cases
                 denom = sums["ΣX²"]
-                if denom == 0 or (sums["ΣX²"] * sums["ΣY²"]) == 0:
+                denom2 = sums["ΣX²"] * sums["ΣY²"]
+                if denom == 0 or denom2 == 0:
                     st.error("Cannot compute coefficients: zero variance in data.")
                 else:
-                    r = sums["ΣXY"] / np.sqrt(sums["ΣX²"] * sums["ΣY²"])
-                    b = sums["ΣXY"] / sums["ΣX²"]
-                    a = np.mean(y) - b * np.mean(x)
+                    r = round(sums["ΣXY"] / np.sqrt(denom2), 4)
+                    b = round(sums["ΣXY"] / denom, 4)
+                    a = round(y_bar - b * x_bar, 4)
 
                     results = {
-                        "Mean of X (x̄)": float(np.mean(x)),
-                        "Mean of Y (ȳ)": float(np.mean(y)),
-                        # Use NumPy's std for population standard deviation (ddof=0). Change to ddof=1 for sample std.
-                        "Standard Deviation of X (σx)": float(np.std(x, ddof=0)),
-                        "Standard Deviation of Y (σy)": float(np.std(y, ddof=0)),
-                        "Correlation Coefficient (r)": float(r),
-                        "Regression Coefficient (b)": float(b),
-                        "Y-Intercept (a)": float(a)
+                        "Mean of X (x̄)": x_bar,
+                        "Mean of Y (ȳ)": y_bar,
+                        "Standard Deviation of X (σx)": round(float(np.std(x, ddof=0)), 4),
+                        "Standard Deviation of Y (σy)": round(float(np.std(y, ddof=0)), 4),
+                        "Correlation Coefficient (r)": r,
+                        "Regression Coefficient (b)": b,
+                        "Y-Intercept (a)": a
                     }
-                    # Round the displayed results to 4 decimal places
-                    results_rounded = {k: (round(v, 4) if isinstance(v, float) else v) for k, v in results.items()}
                     st.subheader("Calculated Results")
-                    st.write(pd.DataFrame([results_rounded]))
+                    st.write(pd.DataFrame([results]))
 
                     st.info("✅ Table generated successfully!")
 
@@ -172,4 +173,3 @@ if mode == "Co-Efficient Co-relation Data Calculator":
 st.markdown(
     "<p style='text-align: center;'>Created by <a href='https://github.com/Mohitkumar2007'>Mohit Kumar A</a></p>",
     unsafe_allow_html=True)
-
