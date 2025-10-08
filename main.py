@@ -90,7 +90,10 @@ if mode == "Curve Fitting Data Calculator":
 
 
 if mode == "Co-Efficient Co-relation Data Calculator":
-    # Input Section
+    st.markdown("""
+        <h2 style='text-align: center; color: #4CAF50;'>Co-Efficient Co-relation Data Calculator</h2>
+        """, unsafe_allow_html=True)
+    st.write("---")
     st.subheader("Enter your data")
 
     with st.form(key="data1_form"):
