@@ -158,6 +158,8 @@ if mode == "Co-Efficient Co-relation Data Calculator":
                         "Mean of Y (ȳ)": y_bar,
                         "Standard Deviation of X (σx)": round(float(np.std(x, ddof=0)), 4),
                         "Standard Deviation of Y (σy)": round(float(np.std(y, ddof=0)), 4),
+                        "Standard Deviation of X² (σx²)": round(float(np.std(x**2, ddof=0)), 4),
+                        "Standard Deviation of Y² (σy²)": round(float(np.std(y**2, ddof=0)), 4),
                         "Correlation Coefficient (r)": r,
                         "Regression Coefficient (b)": b,
                         "Y-Intercept (a)": a
