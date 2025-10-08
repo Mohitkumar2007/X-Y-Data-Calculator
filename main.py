@@ -63,9 +63,10 @@ if mode == "Curve Fitting Data Calculator":
                 })
 
                 st.subheader("Calculated Table")
-                st.dataframe(df, use_container_width=True)
+                # Display numbers rounded to 4 decimal places
+                st.dataframe(df.round(4), use_container_width=True)
 
-                # Summations
+                # Summations (rounded to 4 decimal places)
                 sums = {
                     "ΣX": np.sum(x),
                     "ΣY": np.sum(y),
@@ -75,8 +76,9 @@ if mode == "Curve Fitting Data Calculator":
                     "Σ(X*Y)": np.sum(x * y),
                     "Σ(X²*Y)": np.sum((x ** 2) * y),
                 }
+                sums_rounded = {k: round(float(v), 4) for k, v in sums.items()}
                 st.subheader("Summations")
-                st.write(pd.DataFrame([sums]))
+                st.write(pd.DataFrame([sums_rounded]))
 
                 # Graphical Representation
                 st.subheader("Graphical Representation")
@@ -122,17 +124,21 @@ if mode == "Co-Efficient Co-relation Data Calculator":
                     "XY": (x - np.mean(x)) * (y - np.mean(y)),
                 })
                 st.subheader("Generated Data Table")
-                st.dataframe(df, use_container_width=True)
+                # Display numbers rounded to 4 decimal places
+                st.dataframe(df.round(4), use_container_width=True)
 
                 sums = {
                     "Σx": np.sum(x),
                     "Σy": np.sum(y),
+                    "ΣX": np.sum(x - np.mean(x)),
+                    "ΣY": np.sum(y - np.mean(y)),
                     "ΣX²": np.sum((x - np.mean(x)) ** 2),
                     "ΣY²": np.sum((y - np.mean(y)) ** 2),
                     "ΣXY": np.sum((x - np.mean(x)) * (y - np.mean(y)))
                 }
+                sums_rounded = {k: round(float(v), 4) for k, v in sums.items()}
                 st.subheader("Summation Values")
-                st.write(pd.DataFrame([sums]))
+                st.write(pd.DataFrame([sums_rounded]))
 
                 # Avoid division by zero in degenerate cases
                 denom = sums["ΣX²"]
@@ -146,14 +152,15 @@ if mode == "Co-Efficient Co-relation Data Calculator":
                     results = {
                         "Mean of X (x̄)": float(np.mean(x)),
                         "Mean of Y (ȳ)": float(np.mean(y)),
-                        "Standard Deviation of X (σx)": float(np.std(x, ddof=1)),
-                        "Standard Deviation of Y (σy)": float(np.std(y, ddof=1)),
+                        # Use NumPy's std for population standard deviation (ddof=0). Change to ddof=1 for sample std.
+                        "Standard Deviation of X (σx)": float(np.std(x, ddof=0)),
+                        "Standard Deviation of Y (σy)": float(np.std(y, ddof=0)),
                         "Correlation Coefficient (r)": float(r),
                         "Regression Coefficient (b)": float(b),
                         "Y-Intercept (a)": float(a)
                     }
-                    # Round the displayed results for readability
-                    results_rounded = {k: (round(v, 6) if isinstance(v, float) else v) for k, v in results.items()}
+                    # Round the displayed results to 4 decimal places
+                    results_rounded = {k: (round(v, 4) if isinstance(v, float) else v) for k, v in results.items()}
                     st.subheader("Calculated Results")
                     st.write(pd.DataFrame([results_rounded]))
 
