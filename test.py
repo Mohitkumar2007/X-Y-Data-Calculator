@@ -10,10 +10,14 @@ st.markdown("""
     """, unsafe_allow_html=True)
 st.write("---")
 
-# Use a single selector instead of two independent checkboxes to avoid both being active
+# Single selector for mode
 mode = st.radio("Choose calculator:", ("Curve Fitting Data Calculator", "Co-Efficient Co-relation Data Calculator"))
 
-# Helper: parse a comma-separated string into a numpy array of floats with validation
+# ddof selector: population (0) or sample (1)
+ddof_choice = st.radio("Choose estimator:", ("Population (divide by N)", "Sample (divide by N-1)"))
+ddof = 0 if ddof_choice.startswith("Population") else 1
+
+# Helper: parse comma-separated numbers into numpy array of floats
 def parse_numbers(text: str) -> np.ndarray:
     if text is None:
         return np.array([])
@@ -26,17 +30,14 @@ def parse_numbers(text: str) -> np.ndarray:
         raise ValueError("Could not parse all values as numbers. Make sure input is comma-separated numbers.") from ve
 
 def round_arr(arr, decimals=4):
+    # Keep shape: convert scalars / arrays consistently
     return np.round(arr, decimals)
 
 if mode == "Curve Fitting Data Calculator":
-    st.markdown("""
-        <h2 style='text-align: center; color: #4CAF50;'>Curve Fitting Data Calculator</h2>
-        """, unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #4CAF50;'>Curve Fitting Data Calculator</h2>", unsafe_allow_html=True)
     st.write("---")
 
-    # Input Section
     st.subheader("Enter your data")
-
     with st.form(key="data_form"):
         x_values = st.text_input("Enter values of X (comma separated):", "1,2,3,4,5")
         y_values = st.text_input("Enter values of Y (comma separated):", "2,4,6,8,10")
@@ -44,7 +45,6 @@ if mode == "Curve Fitting Data Calculator":
 
     if submit:
         try:
-            # Convert input to lists of numbers using helper
             x = parse_numbers(x_values)
             y = parse_numbers(y_values)
 
@@ -53,7 +53,7 @@ if mode == "Curve Fitting Data Calculator":
             elif len(x) != len(y):
                 st.error("❌ Number of X and Y values must be the same.")
             else:
-                # Calculations (all columns rounded to 4 decimals)
+                # Calculations (columns rounded to 4 decimals)
                 df = pd.DataFrame({
                     "X": round_arr(x),
                     "Y": round_arr(y),
@@ -67,7 +67,7 @@ if mode == "Curve Fitting Data Calculator":
                 st.subheader("Calculated Table")
                 st.dataframe(df, use_container_width=True)
 
-                # Summations (rounded to 4 decimals)
+                # Summations (rounded)
                 sums = {
                     "ΣX": round(float(np.sum(x)), 4),
                     "ΣY": round(float(np.sum(y)), 4),
@@ -80,10 +80,10 @@ if mode == "Curve Fitting Data Calculator":
                 st.subheader("Summations")
                 st.write(pd.DataFrame([sums]))
 
-                # Graphical Representation
-                st.subheader("Graphical Representation")
                 # Plot only X vs Y for clarity
-                st.line_chart(df[["X", "Y"]])  
+                st.subheader("Graphical Representation")
+                # Provide a DataFrame with X and Y for line_chart / scatter
+                st.line_chart(pd.DataFrame({"X": x, "Y": y}))
 
                 st.info("✅ Table and graph generated successfully!")
 
@@ -91,9 +91,7 @@ if mode == "Curve Fitting Data Calculator":
             st.error(f"⚠️ Error: {e}")
 
 if mode == "Co-Efficient Co-relation Data Calculator":
-    st.markdown("""
-        <h2 style='text-align: center; color: #4CAF50;'>Co-Efficient Co-relation Data Calculator</h2>
-        """, unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #4CAF50;'>Co-Efficient Co-relation Data Calculator</h2>", unsafe_allow_html=True)
     st.write("---")
     st.subheader("Enter your data")
 
@@ -115,6 +113,8 @@ if mode == "Co-Efficient Co-relation Data Calculator":
                 # Means
                 x_bar = round(float(np.mean(x)), 4)
                 y_bar = round(float(np.mean(y)), 4)
+
+                # Centered values (X = x - x̄, Y = y - ȳ)
                 X = round_arr(x - x_bar)
                 Y = round_arr(y - y_bar)
                 X2 = round_arr(X ** 2)
@@ -153,27 +153,31 @@ if mode == "Co-Efficient Co-relation Data Calculator":
                     b = round(sums["ΣXY"] / denom, 4)
                     a = round(y_bar - b * x_bar, 4)
 
+                    # Correct labels: std vs variance; also give variance of squared values optionally
                     results = {
                         "Mean of X (x̄)": x_bar,
                         "Mean of Y (ȳ)": y_bar,
-                        "Standard Deviation of X (σx)": round(float(np.std(x, ddof=0)), 4),
-                        "Standard Deviation of Y (σy)": round(float(np.std(y, ddof=0)), 4),
-                        "Standard Variance of X (σ²x)": round(float(np.var(x, ddof=0)), 4),
-                        
+                        "Std Dev of X (σ_x)": round(float(np.std(x, ddof=ddof)), 4),
+                        "Variance of X (σ²_x)": round(float(np.var(x, ddof=ddof)), 4),
+                        # If you really want Var(X²) uncomment next line
+                        # "Variance of X² (Var(X²))": round(float(np.var(x**2, ddof=ddof)), 4),
+                        "Std Dev of Y (σ_y)": round(float(np.std(y, ddof=ddof)), 4),
+                        "Variance of Y (σ²_y)": round(float(np.var(y, ddof=ddof)), 4),
                     }
 
                     results1 = {
-                        "Standard Variance of Y (σ²y)": round(float(np.var(y, ddof=0)), 4),
                         "Correlation Coefficient (r)": r,
                         "Regression Coefficient (b)": b,
                         "Y-Intercept (a)": a,
                         "Regression Equation": f"y = {a} + {b}x",
                     }
-                    st.subheader("Calculated Results")
-                    st.write(pd.DataFrame([results]))
-                    st.write(pd.DataFrame([results1]))
 
-                    st.info("✅ Table generated successfully!")
+                    st.subheader("Calculated Results")
+                    # Combine both result dicts into one tidy table for compact display
+                    combined = {**results, **results1}
+                    st.write(pd.DataFrame([combined]))
+
+                    st.info("✅ Results calculated successfully!")
 
         except Exception as e:
             st.error(f"⚠️ Error: {e}")
